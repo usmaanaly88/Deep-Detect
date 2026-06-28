@@ -2,9 +2,12 @@ from inference import predict_label
 
 def predict(image_path: str) -> str:
     """
-    Predict if the image is real or fake (AI-generated).
+    Predict if the image is real or AI-generated.
+
+    Args:
+        image_path (str): Absolute or relative path to the image file.
 
     Returns:
-        str: "fake" or "real".
+        str: "ai" or "real".
     """
     return predict_label(image_path)

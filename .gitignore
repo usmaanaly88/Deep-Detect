@@ -1,0 +1,108 @@
+# =============================================================
+#  Deep-Detect — Root .gitignore
+# =============================================================
+
+# -----------------------------------------------
+# 🐍 Python — Image_Detector (Backend)
+# -----------------------------------------------
+
+# Virtual environments
+Image_Detector/venv/
+Image_Detector/env/
+Image_Detector/.venv/
+venv/
+.venv/
+env/
+
+# Trained model weights (too large for GitHub; use Git LFS or share via release)
+Image_Detector/models/*.pt
+Image_Detector/models/*.pth
+Image_Detector/models/*.bin
+Image_Detector/models/*.onnx
+
+# Uploaded / cached inference images
+Image_Detector/images/
+
+# Python bytecode & caches
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+
+# -----------------------------------------------
+# 📱 React Native — DeepDetectMobile (Frontend)
+# -----------------------------------------------
+
+# Node dependencies
+DeepDetectMobile/node_modules/
+
+# Metro bundler cache
+DeepDetectMobile/.metro-health-check*
+
+# Android build artifacts (can be regenerated with `npm run android`)
+DeepDetectMobile/android/build/
+DeepDetectMobile/android/.gradle/
+DeepDetectMobile/android/app/build/
+DeepDetectMobile/android/.cxx/
+DeepDetectMobile/android/app/.cxx/
+DeepDetectMobile/android/.kotlin/
+
+# Android SDK local config (machine-specific, never commit)
+DeepDetectMobile/android/local.properties
+
+# Firebase config (contains project secrets — share privately with team)
+DeepDetectMobile/android/app/google-services.json
+DeepDetectMobile/ios/GoogleService-Info.plist
+
+# Android signing keys (NEVER commit release keystores)
+**/*.keystore
+!DeepDetectMobile/android/app/debug.keystore
+
+# iOS build artifacts
+DeepDetectMobile/ios/build/
+DeepDetectMobile/ios/Pods/
+DeepDetectMobile/ios/DerivedData/
+**/.xcode.env.local
+
+# React Native bundle artifacts
+*.jsbundle
+DeepDetectMobile/.bundle/
+
+# JS bundle map files
+*.map
+
+# -----------------------------------------------
+# 🔧 IDEs and Editors
+# -----------------------------------------------
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+
+# -----------------------------------------------
+# 🔑 Environment & Secrets
+# -----------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# -----------------------------------------------
+# 📋 Logs
+# -----------------------------------------------
+*.log
+npm-debug.log*
+yarn-error.log*
+Image_Detector/logs/
+
+# -----------------------------------------------
+# 📄 Internal Planning Docs (IDE-generated)
+# -----------------------------------------------
+docs/implementation_plan.md
+docs/walkthrough.md
+docs/*

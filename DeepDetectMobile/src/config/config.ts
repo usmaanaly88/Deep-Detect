@@ -1,2 +1,2 @@
-export const BASE_URL = "https://purplish-usage-crowd.ngrok-free.dev"
-export const END_POINT= "/predict"
+export const BASE_URL = "http://10.133.99.87:8000"
+export const END_POINT = "/predict"

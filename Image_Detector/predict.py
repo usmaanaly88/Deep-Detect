@@ -23,7 +23,7 @@ def upload_image():
 
     # Predict
     label = predict(file_path)
-    result_text = "AI Generated" if label.lower() == "fake" else "Real"
+    result_text = "AI Generated" if label.lower() in ("fake", "ai") else "Real"
     label_result.config(text=f"Prediction: {result_text}")
 
 btn_upload = Button(root, text="Upload Image", command=upload_image)
