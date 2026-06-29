@@ -1,97 +1,151 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Deep-Detect Mobile Client
 
-# Getting Started
+DeepDetectMobile is a cross-platform React Native mobile client written in TypeScript. It allows users to pick or capture images and get real-time classifications using the Deep-Detect FastAPI backend. The app integrates Firebase for guest-based session authentication and scan history persistence, and uses Cloudinary for remote image hosting.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- **Anonymous Authentication** - Guest sign-in powered by Firebase Auth.
+- **Scan History** - Previous predictions saved to Cloudinary and tracked in Firestore.
+- **Responsive Animations** - State transitions and custom loaders for analyzing state.
+- **State Management** - Centralized application state powered by Redux Toolkit.
+- **Modern Navigation** - Stack navigation implemented via React Navigation v7.
+- **Image Handling** - Native camera and gallery picking options.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+---
 
-```sh
-# Using npm
+## Repository Structure
+
+```
+DeepDetectMobile/
+├── android/                 # Android native project files
+├── ios/                     # iOS native project files
+├── src/
+│   ├── assets/              # App fonts, images, and static resources
+│   ├── components/          # Reusable presentation and layout components
+│   ├── config/              # Server configuration settings
+│   │   └── config.ts        # Base URL and API endpoint configuration
+│   ├── constants/           # Screen names, color palettes, and global constants
+│   ├── hooks/               # Custom React hooks
+│   ├── route/               # Stack navigation navigation layout (AppNavigator)
+│   ├── screens/             # UI screens (Splash, Onboarding, Home, Analyzing, Results, Share, History, Settings, Privacy)
+│   ├── services/            # API integration, Firebase Auth, Firestore DB, and Cloudinary uploads
+│   ├── store/               # Redux state configuration and slices
+│   └── utils/               # Helpers and validation functions
+├── App.tsx                  # Root application wrapper (Providers for Redux, Navigation, and Safe Area)
+├── index.js                 # Metro registry entry point
+├── package.json             # NPM package scripts and dependencies
+└── tsconfig.json            # TypeScript compiler configuration
+```
+
+---
+
+## Setup and Installation
+
+### Prerequisites
+
+- **Node.js** - Version 22.11.0 or higher is required.
+- **NPM** - Standard package installer.
+- **Android Studio** - Installed with Android SDK, SDK platform tools, and Emulator configurations.
+- **CocoaPods** - For macOS/iOS native builds.
+
+### Windows Paths Advisory
+
+To prevent build failures due to Windows' 260-character path limit, clone or move the workspace to a shallow path:
+
+```powershell
+# Example: Copying to a root directory
+Copy-Item "C:\path\to\Deep-Detect" "C:\DD" -Recurse
+cd C:\DD\DeepDetectMobile
+```
+
+### Installation Steps
+
+1. Install project dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Configure Android SDK Environment Variables:
+   On Windows (PowerShell):
+   ```powershell
+   $env:ANDROID_HOME = "C:\Users\<YourUser>\AppData\Local\Android\Sdk"
+   $env:PATH = "$env:PATH;$env:ANDROID_HOME\platform-tools"
+   ```
+
+3. Update Connection Configuration:
+   Open [src/config/config.ts](src/config/config.ts) and edit your endpoint settings:
+   ```typescript
+   export const BASE_URL = "http://<your-local-ip>:8000";
+   export const END_POINT = "/predict";
+   ```
+
+4. Native iOS Setup (macOS only):
+   ```bash
+   cd ios
+   bundle install
+   bundle exec pod install
+   cd ..
+   ```
+
+---
+
+## Development Execution
+
+### 1. Start Metro Bundler
+
+Run the Metro bundler to compile your JavaScript bundle:
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+If you encounter caching errors or have updated packages:
+```bash
+npx react-native start --reset-cache
+```
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+### 2. Launch Platform Application
 
-### Android
+Open a second terminal window and execute:
 
-```sh
-# Using npm
+#### Android
+
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+#### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Screen Breakdown
 
-## Step 3: Modify your app
+- **Splash** - Entry loading screen initializing Firebase session credentials.
+- **Onboarding (UnAuth)** - Simple introduction screen explaining the utility.
+- **Home** - Core dashboard to trigger camera capture or media picker.
+- **Analyzing** - Processing interface while calling the FastAPI backend.
+- **Results** - Visual layout showing the class label and confidence percentage.
+- **History** - Past scan logs retrieved chronologically from Firestore.
+- **Share** - Dynamic platform options to share scan results.
+- **Settings** - User options and route to the privacy policy.
+- **Privacy** - Compliance page showing privacy and data terms.
 
-Now that you have successfully run the app, let's make changes!
+---
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Troubleshooting
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **SDK Location Error**: If the build fails indicating SDK paths are missing, create an `android/local.properties` file:
+  ```properties
+  sdk.dir=C\:\\Users\\<YourUser>\\AppData\\Local\\Android\\Sdk
+  ```
+- **Port Conflict**: If Metro fails to start because port 8081 is in use:
+  ```bash
+  npx react-native start --port 8082
+  ```
+- **Network Request Failures**: Ensure your mobile device is on the same local network as your backend host. Double-check your IP configuration in `src/config/config.ts`.

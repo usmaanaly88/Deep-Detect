@@ -1,115 +1,120 @@
----
-title: Deep Detect Api
-emoji: 🦀
-colorFrom: red
-colorTo: blue
-sdk: docker
-app_port: 7860
----
-# Image_Detector — FastAPI Backend 🐍
+# Image_Detector - FastAPI Backend
 
-This directory contains the complete Python backend for Deep-Detect. It exposes a REST API that accepts image uploads and returns an AI vs. Real classification result using a custom-trained PyTorch CNN.
+This directory houses the PyTorch computer vision backend service for Deep-Detect. It exposes a robust FastAPI endpoint that accepts image payloads and predicts whether the image is Real or Deep-Fake (AI-generated) using a custom Convolutional Neural Network (CNN).
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 Image_Detector/
-├── app.py              # FastAPI application — server entry point, routes, CORS
-├── inference.py        # Model loading, image preprocessing, prediction pipeline
-├── model.py            # Custom CNN architecture (PyTorch nn.Module definition)
-├── predict.py          # Standalone Tkinter desktop GUI for local inference
-├── requirements.txt    # All Python package dependencies
-├── models/             # Trained model weights (gitignored — download separately)
-│   └── custom_cnn_standalone.pt   # TorchScript model (~103 MB)
-└── notebooks/          # Jupyter notebooks for research and training
-    ├── Preprocessing.ipynb         # Dataset loading, augmentation, visualization
-    ├── Model_training.ipynb        # Full training loop with loss/accuracy tracking
-    ├── Model_evaluation.ipynb      # Confusion matrix, ROC, per-class metrics
-    └── Pretrained_Models.ipynb     # Experiments with ResNet50, EfficientNet, ViT
+├── app.py              # FastAPI application - server entry point, CORS, and routes
+├── inference.py        # Model loader, transform pipeline, and prediction execution
+├── model.py            # Custom CNN architecture structure (PyTorch definition)
+├── predict.py          # Tkinter desktop desktop utility for local file scans
+├── requirements.txt    # Python module dependencies
+├── models/             # Target folder for model weights (gitignored)
+│   └── custom_cnn_standalone.pt
+└── notebooks/          # Research and model training steps
+    ├── Preprocessing.ipynb
+    ├── Model_training.ipynb
+    ├── Model_evaluation.ipynb
+    └── Pretrained_Models.ipynb
 ```
 
 ---
 
-## ⚙️ Setup
+## Technical Specifications
 
-### 1. Create Virtual Environment
-
-```bash
-cd Image_Detector
-
-python -m venv venv
-
-# Windows
-.\venv\Scripts\activate
-
-# macOS / Linux
-source venv/bin/activate
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Dependencies:**
-| Package | Version | Purpose |
-|---|---|---|
-| `fastapi` | ≥0.100.0 | REST API framework |
-| `uvicorn` | ≥0.20.0 | ASGI server |
-| `python-multipart` | ≥0.0.6 | File upload parsing |
-| `torch` | ≥2.0.0 | PyTorch deep learning |
-| `torchvision` | ≥0.15.0 | Image transforms |
-| `pillow` | ≥9.5.0 | Image I/O |
-
-### 3. Download Model Weights
-
-The model file `custom_cnn_standalone.pt` is too large for GitHub (103 MB > 100 MB limit). Download it from the project's [Releases](../../../releases) page and place it at:
-
-```
-Image_Detector/models/custom_cnn_standalone.pt
-```
+- **Model Framework**: PyTorch (compiled and exported as TorchScript `.pt` file).
+- **Classification type**: Binary (Class 0: AI/Deep-Fake, Class 1: Real).
+- **Input Dimension**: 224 x 224 pixels, 3 channels (RGB).
+- **Inference logic**: Logit output -> Sigmoid function -> Probability.
+- **Decision boundary**: Probability threshold of 0.5.
+  - Probability > 0.5 -> Real (Class 1)
+  - Probability <= 0.5 -> Deep-Fake/AI (Class 0)
+- **Confidence Computation**:
+  - For Real: `probability * 100`
+  - For AI: `(1.0 - probability) * 100`
 
 ---
 
-## 🚀 Running the Server
+## Setup and Installation
+
+### Prerequisites
+
+- Python 3.10 or higher.
+- pip package manager.
+
+### Steps
+
+1. **Activate Virtual Environment**:
+   ```bash
+   cd Image_Detector
+   python -m venv venv
+   
+   # Windows (PowerShell)
+   .\venv\Scripts\activate
+   
+   # Linux / macOS
+   source venv/bin/activate
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Provide Weight File**:
+   Download `custom_cnn_standalone.pt` from the project's Releases tab and copy it into the `models` directory:
+   ```
+   Image_Detector/models/custom_cnn_standalone.pt
+   ```
+
+---
+
+## Running the API Service
 
 ```bash
 python app.py
 ```
 
-The server starts on **`http://0.0.0.0:8000`**. Verify it's healthy:
+The app will initialize and start listening on port 8000 by default.
 
+### Health Verification
+
+Request:
 ```bash
 curl http://localhost:8000/
 ```
 
-Expected response:
+Expected Response:
 ```json
 {
   "status": "healthy",
   "api_name": "Deep-Detect Image Classification Service",
   "model_architecture": "Custom CNN Standalone (PyTorch)",
-  "device_running": "cpu"
+  "device_running": "cpu",
+  "endpoints": {
+    "health_check": "/",
+    "inference": "/predict"
+  }
 }
 ```
 
 ---
 
-## 🔌 API Endpoints
+## API Reference
 
-### `POST /predict`
+### Image Prediction Endpoint
 
-Classifies an uploaded image as Deep-Fake or Real.
+- **Endpoint**: `/predict`
+- **Method**: `POST`
+- **Payload format**: `multipart/form-data`
+- **Field Name**: `file` (must contain image data)
 
-```bash
-curl -X POST http://localhost:8000/predict \
-  -F "file=@/path/to/image.jpg"
-```
+#### Success (200 OK)
 
-**Success Response:**
 ```json
 {
   "prediction": "ai",
@@ -118,51 +123,22 @@ curl -X POST http://localhost:8000/predict \
 }
 ```
 
-- `prediction`: `"ai"` or `"real"`
-- `confidence`: percentage confidence (0–100)
+#### Bad Request (400)
+
+```json
+{
+  "detail": "Uploaded file must be a valid JPEG or PNG image."
+}
+```
 
 ---
 
-## 🧠 Model Details
+## Standalone Desktop Interface
 
-| Property | Value |
-|---|---|
-| Architecture | Custom CNN (defined in `model.py`) |
-| Input Size | 224 × 224 (RGB) |
-| Normalization | ImageNet mean/std |
-| Output | Single logit → Sigmoid → binary probability |
-| Format | TorchScript (`.pt`) — runs without class definition at load time |
-| Inference Device | CPU (configurable) |
-
-**Inference Pipeline** (see [`inference.py`](inference.py)):
-1. Load image bytes → convert to RGB PIL Image
-2. Resize to 224×224
-3. Normalize with ImageNet statistics
-4. Run forward pass through TorchScript model
-5. Apply Sigmoid to raw logit → confidence score
-6. Threshold at 0.5: `< 0.5` → `"real"`, `≥ 0.5` → `"ai"`
-
----
-
-## 🖥️ Desktop Utility
-
-Run local inference via a GUI without starting the API server:
+If you want to perform predictions locally without running the web server daemon, you can run the Tkinter GUI tool:
 
 ```bash
 python predict.py
 ```
 
-Opens a Tkinter window where you can browse and classify local image files directly.
-
----
-
-## 📓 Notebooks
-
-The [`notebooks/`](notebooks/) directory contains the full ML research workflow:
-
-| Notebook | Description |
-|---|---|
-| [`Preprocessing.ipynb`](notebooks/Preprocessing.ipynb) | Dataset exploration, augmentation strategy, class balance analysis |
-| [`Model_training.ipynb`](notebooks/Model_training.ipynb) | Custom CNN training from scratch with loss curves and checkpointing |
-| [`Model_evaluation.ipynb`](notebooks/Model_evaluation.ipynb) | Confusion matrix, ROC-AUC, precision/recall metrics |
-| [`Pretrained_Models.ipynb`](notebooks/Pretrained_Models.ipynb) | Transfer learning experiments: ResNet50, EfficientNet, ViT |
+This launches a graphical interface to browse, view, and inspect images.
