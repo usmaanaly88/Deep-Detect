@@ -1,3 +1,11 @@
+---
+title: Deep Detect Api
+emoji: 🦀
+colorFrom: red
+colorTo: blue
+sdk: docker
+app_port: 7860
+---
 # Image_Detector - FastAPI Backend
 
 This directory houses the PyTorch computer vision backend service for Deep-Detect. It exposes a robust FastAPI endpoint that accepts image payloads and predicts whether the image is Real or Deep-Fake (AI-generated) using a custom Convolutional Neural Network (CNN).
