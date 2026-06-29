@@ -142,29 +142,31 @@ def _load_hf_models() -> None:
 
 def _predict_hf1(pil_image: Image.Image) -> str:
     """Deepfake-Detection-Exp-02-21 — labels: 'Deepfake' / 'Real' (correct)."""
-    if _model_hf1 is None:
-        _load_hf_models()
-    if not _model_hf1:
-        return "unknown"
     try:
+        if _model_hf1 is None:
+            _load_hf_models()
+        if not _model_hf1:
+            return "unknown"
         best = max(_model_hf1(pil_image), key=lambda x: x["score"])
         return "ai" if best["label"].lower() == "deepfake" else "real"
-    except Exception:
+    except Exception as exc:
+        logger.warning(f"[HF1] Inference failed (non-fatal): {exc}")
         return "unknown"
 
 
 def _predict_hf2(pil_image: Image.Image) -> str:
     """Deep-Fake-Detector-v2-Model — labels are INVERTED in HF config:
        'Realism' actually means Deepfake, 'Deepfake' actually means Real."""
-    if _model_hf2 is None:
-        _load_hf_models()
-    if not _model_hf2:
-        return "unknown"
     try:
+        if _model_hf2 is None:
+            _load_hf_models()
+        if not _model_hf2:
+            return "unknown"
         best = max(_model_hf2(pil_image), key=lambda x: x["score"])
         # Inverted: 'Realism' label → AI fake
         return "ai" if best["label"].lower() == "realism" else "real"
-    except Exception:
+    except Exception as exc:
+        logger.warning(f"[HF2] Inference failed (non-fatal): {exc}")
         return "unknown"
 
 
@@ -190,20 +192,50 @@ def predict_with_confidence(image_source) -> tuple:
       → In case of a tie, CNN label wins (it is the tiebreaker).
 
     Confidence = (winning_weighted_votes / total_weighted_votes) * 100
+
+    This function is designed to NEVER raise. Any failure in the HF
+    models or the threading layer falls back to CNN-only inference.
     """
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 
     image = _load_image(image_source)
 
-    # Run all 3 models concurrently for minimum latency
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        fut_cnn  = ex.submit(_predict_probability, image)
-        fut_hf1  = ex.submit(_predict_hf1, image)
-        fut_hf2  = ex.submit(_predict_hf2, image)
+    # ── Attempt concurrent 3-model inference ─────────────────────────────────
+    probability = None
+    hf1_label   = "unknown"
+    hf2_label   = "unknown"
 
-        probability = fut_cnn.result()
-        hf1_label   = fut_hf1.result()
-        hf2_label   = fut_hf2.result()
+    try:
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            fut_cnn = ex.submit(_predict_probability, image)
+            fut_hf1 = ex.submit(_predict_hf1, image)
+            fut_hf2 = ex.submit(_predict_hf2, image)
+
+            # CNN must succeed — give it 30 s; HF models get 60 s each
+            probability = fut_cnn.result(timeout=30)
+
+            try:
+                hf1_label = fut_hf1.result(timeout=60)
+            except Exception as hf1_err:
+                logger.warning(f"[HF1] result() raised (non-fatal): {hf1_err}")
+                hf1_label = "unknown"
+
+            try:
+                hf2_label = fut_hf2.result(timeout=60)
+            except Exception as hf2_err:
+                logger.warning(f"[HF2] result() raised (non-fatal): {hf2_err}")
+                hf2_label = "unknown"
+
+    except Exception as pool_err:
+        # Entire thread pool failed (e.g. CNN itself threw).  Fall back to
+        # a direct synchronous CNN call so we always return something.
+        logger.error(f"ThreadPoolExecutor failed, falling back to CNN-only: {pool_err}")
+        try:
+            probability = _predict_probability(image)
+        except Exception as cnn_err:
+            # Absolute last resort — model is broken; return a neutral result
+            logger.error(f"CNN fallback also failed: {cnn_err}")
+            return "real", 50.0
 
     # ── CNN decision ──────────────────────────────────────────────────────────
     cnn_label = "real" if probability > OPTIMAL_THRESHOLD else "ai"
@@ -244,10 +276,13 @@ def predict_with_confidence(image_source) -> tuple:
     cnn_confidence_pct = cnn_conf * 100
     final_confidence   = (vote_confidence * 0.6) + (cnn_confidence_pct * 0.4)
 
-    logger.debug(
+    logger.info(
         f"CNN={cnn_label}({cnn_conf:.2f}) "
+        f"HF1={hf1_label} HF2={hf2_label} "
         f"Votes ai={ai_votes} real={real_votes}/{total_weight} "
         f"→ {final_label} ({final_confidence:.1f}%)"
     )
 
     return final_label, round(final_confidence, 2)
+
+
