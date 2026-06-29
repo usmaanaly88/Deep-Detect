@@ -1,9 +1,9 @@
 import { StyleSheet, TextInput, TextInputProps, View, ViewStyle } from 'react-native'
 import React from 'react'
-import { COLORS } from '../../constants/colors'
 import { SHADOWS } from '../../constants/shadows'
 import { FONTFAMILY } from '../../constants/fontFamily'
 import { hexToRgba } from '../../utils/helpers'
+import { useTheme } from '../../hooks/useTheme'
 
 type AppInputProps = TextInputProps & {
   containerStyle?: ViewStyle;
@@ -21,9 +21,10 @@ const AppInput = ({
   shadow = true,
   ...props
 }: AppInputProps) => {
-  const inputBgColor = disabledBackground ? COLORS.border : COLORS.white;
-  const inputTextColor = disabledBackground ? COLORS.textDisabled : COLORS.black;
-  const placeholderColor = COLORS.textSecondary;
+  const theme = useTheme();
+  const inputBgColor = disabledBackground ? theme.border : theme.whiteSoft;
+  const inputTextColor = disabledBackground ? theme.textDisabled : theme.textPrimary;
+  const placeholderColor = theme.textSecondary;
 
   return (
     <View style={containerStyle}>
@@ -34,12 +35,15 @@ const AppInput = ({
           {
             backgroundColor: inputBgColor,
             borderRadius: 28,
+            borderWidth: 1,
+            borderColor: theme.border,
+            color: inputTextColor,
             ...(shadow && SHADOWS.medium),
             ...(border && { 
               borderTopWidth: 2, 
               borderLeftWidth: 2, 
-              borderTopColor: hexToRgba(COLORS.black, 0.15), 
-              borderLeftColor: hexToRgba(COLORS.black, 0.15),
+              borderTopColor: hexToRgba(theme.textPrimary, 0.15), 
+              borderLeftColor: hexToRgba(theme.textPrimary, 0.15),
             }),
           },
           style,
@@ -59,8 +63,6 @@ const styles = StyleSheet.create({
     paddingVertical:0,
     fontSize: 15,
     fontFamily: FONTFAMILY.GeomLight,
-    color: COLORS.black, 
-    // marginBottom: 34,
     borderWidth: 0,
     height: 52,
   },

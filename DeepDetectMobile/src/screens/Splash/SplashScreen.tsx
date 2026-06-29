@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { StyleSheet, Text, View, Animated, StatusBar } from 'react-native'
 import LinearGradient from 'react-native-linear-gradient'
-import { COLORS } from '../../constants/colors'
 import { FONTFAMILY } from '../../constants/fontFamily'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { AppStackParamList } from '../../route/AppNavigator'
 import Svg, { Path, Circle } from 'react-native-svg'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useTheme } from '../../hooks/useTheme'
 
 type SplashScreenNavigationProp = StackNavigationProp<AppStackParamList, 'SplashScreen'>
 
@@ -17,9 +17,10 @@ type SplashScreenProps = {
 const ONBOARDING_KEY = 'onboardingComplete'
 
 const SplashScreen = ({ navigation }: SplashScreenProps) => {
-  const fadeAnim = new Animated.Value(0)
-  const scaleAnim = new Animated.Value(0.5)
-  const rotateAnim = new Animated.Value(0)
+  const theme = useTheme()
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.5)).current
+  const rotateAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     Animated.parallel([
@@ -36,7 +37,7 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
-          duration: 3000,
+          duration: 3500,
           useNativeDriver: true,
         })
       ),
@@ -51,14 +52,12 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
           navigation.replace('OnboardingScreen')
         }
       } catch (_) {
-        // If storage fails, default to onboarding
         navigation.replace('OnboardingScreen')
       }
     }, 2500)
 
     return () => clearTimeout(timer)
   }, [navigation])
-
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -67,12 +66,12 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
 
   return (
     <LinearGradient
-      colors={[COLORS.blueDark, COLORS.bluePrimary, COLORS.greenAccent]}
+      colors={[theme.white, theme.blueSurface, theme.white]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.blueDark} />
+      <StatusBar barStyle={theme.statusBar} backgroundColor={theme.white} />
       
       <Animated.View
         style={[
@@ -85,18 +84,18 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
       >
         {/* Custom Logo */}
         <View style={styles.logoContainer}>
-          {/* Rotating outer ring */}
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+          {/* 3D Rotating outer ring */}
+          <Animated.View style={{ transform: [{ perspective: 300 }, { rotateY: spin }] }}>
             <Svg width="150" height="150" viewBox="0 0 150 150">
               <Circle
                 cx="75"
                 cy="75"
                 r="70"
-                stroke={COLORS.white}
+                stroke={theme.blueMedium}
                 strokeWidth="2"
                 fill="none"
-                opacity="0.3"
-                strokeDasharray="10 5"
+                opacity="0.5"
+                strokeDasharray="12 6"
               />
             </Svg>
           </Animated.View>
@@ -107,17 +106,17 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
               {/* Shield */}
               <Path
                 d="M12 2L4 6V12C4 17.55 7.84 22.54 12 23C16.16 22.54 20 17.55 20 12V6L12 2Z"
-                fill={COLORS.white}
+                fill={theme.blueDark}
               />
               {/* AI Brain dot pattern */}
-              <Circle cx="12" cy="10" r="1.5" fill={COLORS.greenAccent} />
-              <Circle cx="9" cy="12" r="1.5" fill={COLORS.greenAccent} />
-              <Circle cx="15" cy="12" r="1.5" fill={COLORS.greenAccent} />
-              <Circle cx="12" cy="14" r="1.5" fill={COLORS.greenAccent} />
+              <Circle cx="12" cy="10" r="1.5" fill={theme.greenPrimary} />
+              <Circle cx="9" cy="12" r="1.5" fill={theme.greenPrimary} />
+              <Circle cx="15" cy="12" r="1.5" fill={theme.greenPrimary} />
+              <Circle cx="12" cy="14" r="1.5" fill={theme.greenPrimary} />
               {/* Connecting lines */}
               <Path
                 d="M12 10L9 12M12 10L15 12M9 12L12 14M15 12L12 14"
-                stroke={COLORS.greenAccent}
+                stroke={theme.greenPrimary}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
@@ -126,17 +125,17 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
         </View>
 
         {/* App Name */}
-        <Text style={styles.appName}>DeepDetect</Text>
+        <Text style={[styles.appName, { color: theme.textdark }]}>DeepDetect</Text>
         
         {/* Tagline */}
-        <Text style={styles.tagline}>AI Image Detection</Text>
+        <Text style={[styles.tagline, { color: theme.textSecondary }]}>AI Image Detection</Text>
         
         {/* Loading Indicator */}
         <View style={styles.loadingContainer}>
           <View style={styles.dotContainer}>
-            <View style={[styles.dot, styles.dot1]} />
-            <View style={[styles.dot, styles.dot2]} />
-            <View style={[styles.dot, styles.dot3]} />
+            <View style={[styles.dot, styles.dot1, { backgroundColor: theme.blueMedium }]} />
+            <View style={[styles.dot, styles.dot2, { backgroundColor: theme.blueMedium }]} />
+            <View style={[styles.dot, styles.dot3, { backgroundColor: theme.blueMedium }]} />
           </View>
         </View>
       </Animated.View>
@@ -171,14 +170,12 @@ const styles = StyleSheet.create({
   appName: {
     fontFamily: FONTFAMILY.VivitaBold,
     fontSize: 40,
-    color: COLORS.white,
     marginBottom: 8,
     letterSpacing: 2,
   },
   tagline: {
     fontFamily: FONTFAMILY.VivitaLight,
     fontSize: 16,
-    color: COLORS.white,
     opacity: 0.9,
     letterSpacing: 1,
   },
@@ -193,7 +190,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.white,
   },
   dot1: {
     opacity: 0.4,

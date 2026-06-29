@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   StatusBar,
   ActivityIndicator,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -44,6 +45,9 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   const fetchHistory = useCallback(async () => {
     try {
       setError(null);
@@ -54,6 +58,13 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
       }
       const items = await getHistory(uid);
       setHistory(items);
+      
+      // Animate in when loaded
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
     } catch (e: any) {
       setError('Failed to load history. Pull down to retry.');
       console.error('[HistoryScreen]', e);
@@ -61,7 +72,7 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [fadeAnim]);
 
   useEffect(() => {
     fetchHistory();
@@ -84,50 +95,41 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
 
   const renderItem = ({ item }: { item: HistoryItem }) => {
     const isAI = item.prediction === 'ai';
-    const badgeColor = isAI ? theme.red : theme.greenMuted;
-    const badgeBg = isAI ? theme.red + '20' : theme.greenAccent + '20';
+    const badgeColor = isAI ? theme.red : theme.greenPrimary;
+    const badgeBg = isAI ? theme.red + '15' : theme.greenPrimary + '15';
 
     return (
       <TouchableOpacity
-        style={[styles.card, { backgroundColor: theme.whiteSoft, borderColor: theme.divider }]}
+        style={[styles.card, { backgroundColor: theme.whiteSoft, borderColor: theme.border }]}
         onPress={() => handleItemPress(item)}
-        activeOpacity={0.82}
+        activeOpacity={0.9}
       >
-        {/* Thumbnail */}
+        {/* Image Thumbnail wrapper with scan visual */}
         <View style={styles.thumbWrapper}>
           <Image
             source={{ uri: item.imageUrl }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
-          {/* Prediction overlay badge on image */}
-          <View style={[styles.overlayBadge, { backgroundColor: badgeColor }]}>
-            <MaterialCommunityIcons
-              name={isAI ? 'robot' : 'check-circle'}
-              size={10}
-              color="#fff"
-            />
-          </View>
+          <View style={[styles.overlayIndicator, { backgroundColor: badgeColor }]} />
         </View>
 
-        {/* Content */}
+        {/* Content Info block */}
         <View style={styles.cardContent}>
           <View style={[styles.predBadge, { backgroundColor: badgeBg }]}>
             <Text style={[styles.predText, { color: badgeColor }]}>
-              {isAI ? 'AI Generated' : 'Real Image'}
+              {isAI ? 'Deep-Fake' : 'Real Image'}
             </Text>
           </View>
 
           <View style={styles.confidenceRow}>
-            <Text style={[styles.confLabel, { color: theme.textSecondary }]}>
-              Confidence
-            </Text>
+            <Text style={[styles.confLabel, { color: theme.textSecondary }]}>Confidence:</Text>
             <Text style={[styles.confValue, { color: theme.textdark }]}>
               {Math.round(item.confidence)}%
             </Text>
           </View>
 
-          {/* Mini confidence bar */}
+          {/* Mini aesthetic confidence bar */}
           <View style={[styles.barBg, { backgroundColor: theme.divider }]}>
             <View
               style={[
@@ -145,11 +147,11 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
           </Text>
         </View>
 
-        {/* Chevron */}
+        {/* Action Chevron */}
         <MaterialCommunityIcons
           name="chevron-right"
-          size={22}
-          color={theme.textSecondary}
+          size={20}
+          color={theme.blueDark}
           style={styles.chevron}
         />
       </TouchableOpacity>
@@ -159,22 +161,22 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <LinearGradient
-        colors={[theme.blueSoft ?? '#EBF2FF', theme.blueBackground]}
+        colors={[theme.blueSoft, theme.blueBackground]}
         style={styles.emptyIconCircle}
       >
-        <MaterialCommunityIcons name="history" size={52} color={theme.blueDark} />
+        <MaterialCommunityIcons name="shield-history" size={48} color={theme.blueDark} />
       </LinearGradient>
       <Text style={[styles.emptyTitle, { color: theme.textdark }]}>No History Yet</Text>
       <Text style={[styles.emptyDesc, { color: theme.textSecondary }]}>
-        Analyze your first image to see results here.
+        Your scan history will appear here once you check images.
       </Text>
       <TouchableOpacity
-        style={[styles.analyzeNowBtn, { borderColor: theme.blueDark }]}
+        style={[styles.analyzeNowBtn, { borderColor: theme.border, backgroundColor: theme.whiteSoft }]}
         onPress={() => navigation.navigate('HomeScreen')}
-        activeOpacity={0.82}
+        activeOpacity={0.8}
       >
         <Text style={[styles.analyzeNowText, { color: theme.blueDark }]}>
-          Analyze an Image
+          Check an Image
         </Text>
       </TouchableOpacity>
     </View>
@@ -182,7 +184,7 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
 
   const renderError = () => (
     <View style={styles.emptyContainer}>
-      <MaterialCommunityIcons name="alert-circle-outline" size={52} color={theme.red} />
+      <MaterialCommunityIcons name="alert-circle-outline" size={48} color={theme.red} />
       <Text style={[styles.emptyTitle, { color: theme.textdark }]}>Oops!</Text>
       <Text style={[styles.emptyDesc, { color: theme.textSecondary }]}>{error}</Text>
     </View>
@@ -192,12 +194,16 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.white }]}>
       <StatusBar barStyle={theme.statusBar} backgroundColor={theme.white} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.divider }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={theme.blueDark} />
+      {/* Modern minimal header */}
+      <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.whiteSoft }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.backButton, { backgroundColor: theme.graySurface }]}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color={theme.blueDark} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.textdark }]}>Analysis History</Text>
+        <Text style={[styles.headerTitle, { color: theme.textdark }]}>History</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -211,26 +217,28 @@ const HistoryScreen = ({ navigation }: HistoryScreenProps) => {
       ) : error ? (
         renderError()
       ) : (
-        <FlatList
-          data={history}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={[
-            styles.listContent,
-            history.length === 0 && styles.listContentEmpty,
-          ]}
-          ListEmptyComponent={renderEmpty}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[theme.blueDark]}
-              tintColor={theme.blueDark}
-            />
-          }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <FlatList
+            data={history}
+            keyExtractor={item => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={[
+              styles.listContent,
+              history.length === 0 && styles.listContentEmpty,
+            ]}
+            ListEmptyComponent={renderEmpty}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[theme.blueDark]}
+                tintColor={theme.blueDark}
+              />
+            }
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
+        </Animated.View>
       )}
     </SafeAreaView>
   );
@@ -245,25 +253,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
-  backButton: { padding: 4 },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontFamily: FONTFAMILY.VivitaBold,
     fontSize: 18,
+    letterSpacing: 0.5,
   },
-  placeholder: { width: 32 },
+  placeholder: { width: 36 },
 
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 12,
   },
   loadingText: {
     fontFamily: FONTFAMILY.VivitaMedium,
-    fontSize: 15,
+    fontSize: 14,
   },
 
   listContent: {
@@ -278,59 +298,57 @@ const styles = StyleSheet.create({
     height: 12,
   },
 
-  // ── Card ────────────────────────────────────────────────────────────────
+  // ── Card Styles ─────────────────────────────────────────────────────────
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    overflow: 'hidden',
     padding: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
   thumbWrapper: {
     position: 'relative',
     marginRight: 14,
   },
   thumbnail: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    backgroundColor: '#e0e0e0',
+    width: 80,
+    height: 80,
+    borderRadius: 14,
   },
-  overlayBadge: {
+  overlayIndicator: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+    bottom: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   cardContent: {
     flex: 1,
-    gap: 5,
+    gap: 4,
   },
   predBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 20,
+    borderRadius: 12,
     marginBottom: 2,
   },
   predText: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 12,
+    fontSize: 11,
   },
   confidenceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   confLabel: {
     fontFamily: FONTFAMILY.VivitaLight,
@@ -338,63 +356,68 @@ const styles = StyleSheet.create({
   },
   confValue: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 14,
+    fontSize: 13,
   },
   barBg: {
     height: 5,
-    borderRadius: 3,
+    borderRadius: 2.5,
     overflow: 'hidden',
     marginTop: 2,
   },
   barFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2.5,
   },
   dateText: {
     fontFamily: FONTFAMILY.VivitaLight,
-    fontSize: 11,
-    marginTop: 3,
+    fontSize: 10,
+    marginTop: 2,
   },
   chevron: {
-    marginLeft: 6,
+    marginLeft: 4,
   },
 
-  // ── Empty / Error ────────────────────────────────────────────────────────
+  // ── Empty / Error Styles ─────────────────────────────────────────────────
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    gap: 16,
+    gap: 14,
   },
   emptyIconCircle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyTitle: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 22,
+    fontSize: 20,
     textAlign: 'center',
   },
   emptyDesc: {
     fontFamily: FONTFAMILY.VivitaLight,
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   analyzeNowBtn: {
-    marginTop: 8,
-    paddingHorizontal: 28,
+    marginTop: 10,
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 24,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 1,
   },
   analyzeNowText: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 15,
+    fontSize: 14,
   },
 });

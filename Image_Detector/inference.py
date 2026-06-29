@@ -34,7 +34,11 @@ transform = transforms.Compose(
 
 # Load the compiled TorchScript model
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model file not found at: {MODEL_PATH}")
+    fallback_path = os.path.join(BASE_DIR, "custom_cnn_standalone.pt")
+    if os.path.exists(fallback_path):
+        MODEL_PATH = fallback_path
+    else:
+        raise FileNotFoundError(f"Model file not found at: {MODEL_PATH} or {fallback_path}")
 
 try:
     logger.info(f"Loading TorchScript model from {MODEL_PATH}...")

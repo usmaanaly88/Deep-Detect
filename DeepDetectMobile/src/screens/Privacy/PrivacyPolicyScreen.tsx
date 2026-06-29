@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: 'How We Use Your Data',
-    body: 'The images you upload are used solely to perform AI-detection analysis and return a result to you. We do not use your images for training or share them with third parties.',
+    body: 'The images you upload are used solely to perform Deep-Fake detection analysis and return a result to you. We do not use your images for training or share them with third parties.',
   },
   {
     title: 'Data Security',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,11 @@ import {
   Alert,
   Image,
   TouchableOpacity,
+  Animated,
+  Dimensions,
+  Easing,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { COLORS } from '../../constants/colors'
 import { FONTFAMILY } from '../../constants/fontFamily'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { AppStackParamList } from '../../route/AppNavigator'
@@ -21,7 +23,6 @@ import { launchImageLibrary, launchCamera, ImagePickerResponse, Asset } from 're
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions'
 import { Platform } from 'react-native'
 import { useTheme } from '../../hooks/useTheme'
-import ShareScreen from '../Share/ShareScreen'
 
 type HomeScreenNavigationProp = StackNavigationProp<AppStackParamList, 'HomeScreen'>
 
@@ -29,9 +30,101 @@ type HomeScreenProps = {
   navigation: HomeScreenNavigationProp
 }
 
+const { width } = Dimensions.get('window')
+
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const theme = useTheme()
   const [selectedImage, setSelectedImage] = useState<Asset | null>(null)
+
+  // Animated values for premium micro-interactions
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(30)).current
+  const imageScale = useRef(new Animated.Value(0.9)).current
+  
+  // 3D Parallax Tilt animations for action cards
+  const tiltX = useRef(new Animated.Value(0)).current
+  const tiltY = useRef(new Animated.Value(0)).current
+  
+  // 3D Illustration rotation
+  const rotateIllustration = useRef(new Animated.Value(0)).current
+
+  // Scale spring animation for scan button
+  const scaleButton = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    // Mount animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start()
+
+    // 3D Illustration continuous rotation
+    const illustrationAnim = Animated.loop(
+      Animated.timing(rotateIllustration, {
+        toValue: 1,
+        duration: 10000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    )
+
+    // Idle 3D Card Parallax Sway
+    const idleParallax = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(tiltX, { toValue: 4, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(tiltY, { toValue: -4, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(tiltX, { toValue: -4, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(tiltY, { toValue: 4, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ])
+    )
+
+    // Start loops on mount
+    illustrationAnim.start()
+    idleParallax.start()
+
+    // Pause loops when screen loses focus to ensure zero background CPU usage
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      illustrationAnim.start()
+      idleParallax.start()
+    })
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      illustrationAnim.stop()
+      idleParallax.stop()
+    })
+
+    return () => {
+      unsubscribeFocus()
+      unsubscribeBlur()
+      illustrationAnim.stop()
+      idleParallax.stop()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedImage) {
+      Animated.spring(imageScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }).start()
+    } else {
+      imageScale.setValue(0.9)
+    }
+  }, [selectedImage])
 
   const requestCameraPermission = async (): Promise<boolean> => {
     try {
@@ -52,13 +145,10 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     try {
       if (Platform.OS === 'android') {
         const androidVersion = Platform.Version
-        
-        if (androidVersion >= 33) {
-          // Android 13+
+        if (Number(androidVersion) >= 33) {
           const result = await request(PERMISSIONS.ANDROID.READ_MEDIA_IMAGES)
           return result === RESULTS.GRANTED
         } else {
-          // Android 12 and below
           const result = await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE)
           return result === RESULTS.GRANTED
         }
@@ -102,9 +192,8 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   }
 
   const handleUploadImage = async () => {
-    // Request permission first
     const hasPermission = await requestStoragePermission()
-    
+
     if (!hasPermission) {
       Alert.alert(
         'Permission Required',
@@ -114,7 +203,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       return
     }
 
-    // Launch image picker
     launchImageLibrary(
       {
         mediaType: 'photo',
@@ -134,229 +222,213 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     )
   }
 
+  const handleScanPress = () => {
+    Animated.sequence([
+      Animated.timing(scaleButton, { toValue: 0.92, duration: 100, useNativeDriver: true }),
+      Animated.spring(scaleButton, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }),
+    ]).start(() => {
+      navigation.navigate('AnalyzingScreen', {
+        imageUri: selectedImage!.uri!,
+        fileName: selectedImage!.fileName,
+        fileType: selectedImage!.type,
+      })
+    })
+  }
+
+  const rotIllustrate = rotateIllustration.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
+
+  // Card 3D Tilt transforms
+  const rotateCardX = tiltX.interpolate({
+    inputRange: [-10, 10],
+    outputRange: ['-6deg', '6deg'],
+  })
+
+  const rotateCardY = tiltY.interpolate({
+    inputRange: [-10, 10],
+    outputRange: ['-6deg', '6deg'],
+  })
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.white }]}>
       <StatusBar barStyle={theme.statusBar} backgroundColor={theme.white} />
-      
-      <ScrollView 
+
+      {/* Sleek Glassmorphic Header */}
+      <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.whiteSoft }]}>
+        <View style={styles.logoContainer}>
+          <View style={[styles.logoIconBg, { backgroundColor: theme.blueSurface }]}>
+            <MaterialCommunityIcons name="shield-lock-open" size={22} color={theme.blueMedium} />
+          </View>
+          <Text style={[styles.appTitle, { color: theme.textdark }]}>DeepDetect</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('SettingsScreen')}
+          style={[styles.settingsBtn, { backgroundColor: theme.graySurface }]}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="cog" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: theme.divider }]}>
-          <View style={styles.logoContainer}>
-            <MaterialCommunityIcons name="shield-check" size={32} color={theme.blueDark} />
-            <Text style={[styles.appTitle, { color: theme.blueDark }]}>DeepDetect</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('SettingsScreen')}
-            style={styles.settingsBtn}
-          >
-            <MaterialCommunityIcons name="cog-outline" size={26} color={theme.blueDark} />
-          </TouchableOpacity>
-        </View>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          
+          {/* Selected Image Preview Container */}
+          {selectedImage && (
+            <Animated.View style={[styles.imagePreviewContainer, { transform: [{ scale: imageScale }] }]}>
+              <View style={[styles.imagePreviewFrame, { borderColor: theme.border, backgroundColor: theme.whiteSoft }]}>
+                <Image
+                  source={{ uri: selectedImage.uri }}
+                  style={styles.imagePreview}
+                  resizeMode="cover"
+                />
+                <TouchableOpacity
+                  style={styles.clearImageBtn}
+                  onPress={() => setSelectedImage(null)}
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons name="close" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.imageSelectedBadge, { backgroundColor: theme.greenBackground }]}>
+                <MaterialCommunityIcons name="check-circle" size={14} color={theme.greenPrimary} />
+                <Text style={[styles.imagePreviewText, { color: theme.greenPrimary }]}>Image ready to analyze</Text>
+              </View>
+            </Animated.View>
+          )}
 
-        {/* Selected Image Preview */}
-        {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
-            <View style={styles.imagePreviewFrame}>
-              <Image
-                source={{ uri: selectedImage.uri }}
-                style={styles.imagePreview}
-                resizeMode="cover"
-              />
+          {/* Main Clean Tech Illustration with 3D Y-Axis rotation */}
+          {!selectedImage && (
+            <View style={styles.illustrationContainer}>
+              <View style={[styles.glowCircle, { backgroundColor: theme.blueMedium, opacity: 0.08 }]} />
+              <Animated.View style={{ transform: [{ perspective: 350 }, { rotateY: rotIllustrate }] }}>
+                <Svg width="220" height="220" viewBox="0 0 200 200">
+                  <Defs>
+                    <SvgGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <Stop offset="0%" stopColor={theme.blueDark} stopOpacity="0.3" />
+                      <Stop offset="100%" stopColor={theme.blueMedium} stopOpacity="0.05" />
+                    </SvgGradient>
+                  </Defs>
+                  <Circle cx="100" cy="100" r="85" fill="url(#grad1)" stroke={theme.blueMedium} strokeWidth="1.5" strokeDasharray="6,6" opacity="0.6" />
+                  <Circle cx="100" cy="100" r="60" fill="none" stroke={theme.bluePrimary} strokeWidth="1" opacity="0.25" />
+                  
+                  {/* Tech target reticle */}
+                  <Path d="M100 20 V40 M100 160 V180 M20 100 H40 M160 100 H180" stroke={theme.blueMedium} strokeWidth="2.5" opacity="0.6" />
+                  
+                  {/* Floating nodes representing deepfake detection nodes */}
+                  <Circle cx="70" cy="65" r="5.5" fill={theme.blueMedium} />
+                  <Circle cx="140" cy="80" r="4.5" fill={theme.blueDark} />
+                  <Circle cx="80" cy="135" r="6.5" fill={theme.greenPrimary} />
+                  <Circle cx="130" cy="130" r="5.5" fill={theme.red} />
+                  
+                  {/* Interconnecting data pathways */}
+                  <Path d="M70 65 L100 100 L140 80 M100 100 L80 135 M100 100 L130 130" stroke={theme.blueSoft} strokeWidth="1" strokeDasharray="3,3" />
+                  
+                  {/* Main Scanning Brain/Shield Hub */}
+                  <G transform="translate(82, 82)">
+                    <Path
+                      d="M18 2 L2 9 V22 C2 32 8 40 18 44 C28 40 34 32 34 22 V9 L18 2 Z"
+                      fill={theme.whiteSoft}
+                      stroke={theme.blueDark}
+                      strokeWidth="3.5"
+                    />
+                    <Path
+                      d="M18 10 V36 M10 18 H26 M13 28 H23"
+                      stroke={theme.blueMedium}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                  </G>
+                </Svg>
+              </Animated.View>
+            </View>
+          )}
+
+          {/* Premium Welcome Content */}
+          <View style={styles.content}>
+            <Text style={[styles.title, { color: theme.textdark }]}>Check Image Authenticity</Text>
+            <Text style={[styles.description, { color: theme.textSecondary }]}>
+              Check if an image is real or deep-fake. Your images are kept private and processed in seconds.
+            </Text>
+          </View>
+
+          {/* Premium Interactive 3D Parallax Action Cards */}
+          <View style={styles.actionSection}>
+            {/* Capture Button */}
+            <Animated.View style={[styles.actionCard, { transform: [{ perspective: 400 }, { rotateX: rotateCardX }, { rotateY: rotateCardY }] }]}>
               <TouchableOpacity
-                style={styles.clearImageBtn}
-                onPress={() => setSelectedImage(null)}
+                onPress={handleCaptureImage}
+                activeOpacity={0.9}
               >
-                <MaterialCommunityIcons name="close" size={14} color="#fff" />
+                <LinearGradient
+                  colors={[theme.blueDark, theme.bluePrimary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardGradient}
+                >
+                  <View style={styles.cardIconContainer}>
+                    <MaterialCommunityIcons name="camera-plus" size={24} color="#fff" />
+                  </View>
+                  <View style={styles.cardTextContainer}>
+                    <Text style={styles.cardTitle}>Take a Picture</Text>
+                    <Text style={styles.cardSubtitle}>Use your camera to take a photo</Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(255,255,255,0.7)" />
+                </LinearGradient>
               </TouchableOpacity>
-            </View>
-            <View style={styles.imageSelectedBadge}>
-              <MaterialCommunityIcons name="check-circle" size={14} color={theme.greenMuted} />
-              <Text style={[styles.imagePreviewText, { color: theme.greenMuted }]}>Image ready to analyze</Text>
-            </View>
-          </View>
-        )}
+            </Animated.View>
 
-        {/* Main Illustration */}
-        {!selectedImage && (
-          <View style={styles.illustrationContainer}>
-            <Svg width="280" height="280" viewBox="0 0 200 200">
-              <Defs>
-                <SvgGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor={theme.blueDark} stopOpacity="0.2" />
-                  <Stop offset="100%" stopColor={theme.greenAccent} stopOpacity="0.2" />
-                </SvgGradient>
-              </Defs>
-              
-              <Circle cx="100" cy="100" r="90" fill="url(#grad1)" />
-              
-              <Path
-                d="M60 70h80v60H60z"
-                fill="none"
-                stroke={theme.blueDark}
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              
-              <Path
-                d="M70 120L85 100L100 115L125 85L130 95V120H70z"
-                fill={theme.blueMedium}
-                opacity="0.5"
-              />
-              
-              <Circle cx="120" cy="85" r="8" fill={theme.greenAccent} />
-              
-              <G transform="translate(145, 50)">
-                <Circle cx="0" cy="0" r="25" fill={theme.white} stroke={theme.blueDark} strokeWidth="2" />
-                <Circle cx="-5" cy="-5" r="2" fill={theme.greenAccent} />
-                <Circle cx="5" cy="-5" r="2" fill={theme.greenAccent} />
-                <Circle cx="-5" cy="5" r="2" fill={theme.greenAccent} />
-                <Circle cx="5" cy="5" r="2" fill={theme.greenAccent} />
-                <Circle cx="0" cy="0" r="2" fill={theme.blueDark} />
-                <Path
-                  d="M-5 -5L0 0M5 -5L0 0M-5 5L0 0M5 5L0 0"
-                  stroke={theme.blueMedium}
-                  strokeWidth="1"
-                />
-              </G>
-              
-              <G transform="translate(50, 50)">
-                <Circle cx="0" cy="0" r="18" fill={theme.greenAccent} />
-                <Path
-                  d="M-6 0L-2 4L6 -4"
-                  fill="none"
-                  stroke={theme.white}
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </G>
-            </Svg>
-          </View>
-        )}
-
-        {/* Main Content */}
-        <View style={styles.content}>
-          <Text style={[styles.title, { color: theme.textdark }]}>Welcome To DeepDetect</Text>
-          <Text style={[styles.description, { color: theme.textSecondary }]}>
-            Upload any image and our advanced AI technology will analyze it to determine if it's AI-generated or real in seconds.
-          </Text>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionSection}>
-
-          {/* Capture */}
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={handleCaptureImage}
-            activeOpacity={0.82}
-          >
-            <LinearGradient
-              colors={[theme.blueDark, '#1B60A0']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.iconBtnGrad}
-            >
-              <View style={styles.iconBtnCircle}>
-                <MaterialCommunityIcons name="camera" size={22} color="#fff" />
-              </View>
-              <View style={styles.iconBtnLabels}>
-                <Text style={styles.iconBtnTitle}>Capture Image</Text>
-                <Text style={styles.iconBtnSub}>Take a photo with camera</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={22} color="rgba(255,255,255,0.65)" />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Upload */}
-          <TouchableOpacity
-            style={[styles.iconBtn, styles.iconBtnOuterGap]}
-            onPress={handleUploadImage}
-            activeOpacity={0.82}
-          >
-            <View style={[styles.iconBtnOutline, { borderColor: theme.blueDark, backgroundColor: theme.blueBackground }]}>
-              <View style={[styles.iconBtnCircle, { backgroundColor: theme.blueSoft }]}>
-                <MaterialCommunityIcons name="image-multiple-outline" size={22} color={theme.blueDark} />
-              </View>
-              <View style={styles.iconBtnLabels}>
-                <Text style={[styles.iconBtnTitle, { color: theme.textdark }]}>
-                  {selectedImage ? 'Upload Another' : 'Upload Image'}
-                </Text>
-                <Text style={[styles.iconBtnSub, { color: theme.textSecondary }]}>Select from gallery</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.blueDark} />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.iconBtn, styles.iconBtnOuterGap]}
-            onPress={() => navigation.navigate('ShareScreen', { prediction: '', confidence: 0, imageUri: '' })}
-            activeOpacity={0.82}
-          >
-            
-          </TouchableOpacity>
-           
-        </View>
-
-        {/* Analyze Button */}
-        {selectedImage && (
-          <View style={styles.analyzeSection}>
-            <TouchableOpacity
-              style={styles.analyzeBtn}
-              activeOpacity={0.82}
-              onPress={() =>
-                navigation.navigate('AnalyzingScreen', {
-                  imageUri: selectedImage.uri!,
-                  fileName: selectedImage.fileName,
-                  fileType: selectedImage.type,
-                })
-              }
-            >
-              <LinearGradient
-                colors={[theme.greenAccent, theme.blueDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.analyzeBtnGrad}
+            {/* Gallery Upload Button */}
+            <Animated.View style={[styles.actionCard, { marginTop: 14, transform: [{ perspective: 400 }, { rotateX: rotateCardX }, { rotateY: rotateCardY }] }]}>
+              <TouchableOpacity
+                onPress={handleUploadImage}
+                activeOpacity={0.9}
               >
-                <MaterialCommunityIcons name="line-scan" size={24} color="#fff" />
-                <Text style={styles.analyzeBtnText}>Analyze Image</Text>
-                <MaterialCommunityIcons name="arrow-right" size={20} color="rgba(255,255,255,0.8)" />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* How It Works Section */}
-        {/* <View style={styles.howItWorksContainer}>
-          <Text style={[styles.sectionTitle, { color: theme.textdark }]}>How It Works</Text>
-
-          <View style={styles.stepRow}>
-            {[
-              { icon: 'camera-plus-outline', bg: theme.blueSoft,        iconColor: theme.blueDark,  num: '1', title: 'Pick Image',   desc: 'Capture or upload' },
-              { icon: 'brain',               bg: theme.greenBackground, iconColor: theme.greenMuted, num: '2', title: 'AI Scans',    desc: 'Deep analysis'     },
-              { icon: 'check-decagram',      bg: theme.blueSoft,        iconColor: theme.blueDark,  num: '3', title: 'Get Result',  desc: 'Real or AI?'       },
-            ].map((step, idx, arr) => (
-              <React.Fragment key={step.num}>
-                <View style={[styles.stepCard, { backgroundColor: theme.whiteSoft, borderColor: theme.divider }]}>
-                  <View style={[styles.stepIconBg, { backgroundColor: step.bg }]}>
-                    <MaterialCommunityIcons name={step.icon} size={24} color={step.iconColor} />
+                <View style={[styles.cardOutline, { borderColor: theme.border, backgroundColor: theme.whiteSoft }]}>
+                  <View style={[styles.cardIconContainer, { backgroundColor: theme.blueSurface }]}>
+                    <MaterialCommunityIcons name="image-multiple" size={24} color={theme.blueMedium} />
                   </View>
-                  <View style={[styles.stepNumBadge, { backgroundColor: theme.blueDark }]}>
-                    <Text style={styles.stepNumText}>{step.num}</Text>
+                  <View style={styles.cardTextContainer}>
+                    <Text style={[styles.cardTitleOutlined, { color: theme.textdark }]}>
+                      {selectedImage ? 'Choose Different Image' : 'Select from Library'}
+                    </Text>
+                    <Text style={[styles.cardSubtitleOutlined, { color: theme.textSecondary }]}>Import image from device storage</Text>
                   </View>
-                  <Text style={[styles.stepTitle, { color: theme.textdark }]}>{step.title}</Text>
-                  <Text style={[styles.stepDescription, { color: theme.textSecondary }]}>{step.desc}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={theme.blueMedium} />
                 </View>
-                {idx < arr.length - 1 && (
-                  <MaterialCommunityIcons name="chevron-right" size={18} color={theme.divider} style={styles.stepArrow} />
-                )}
-              </React.Fragment>
-            ))}
+              </TouchableOpacity>
+            </Animated.View>
           </View>
-        </View> */}
 
+          {/* Sleek Floating Scan Action Button */}
+          {selectedImage && (
+            <Animated.View style={[styles.analyzeSection, { transform: [{ scale: scaleButton }] }]}>
+              <TouchableOpacity
+                style={styles.analyzeBtn}
+                activeOpacity={0.9}
+                onPress={handleScanPress}
+              >
+                <LinearGradient
+                  colors={[theme.greenAccent, theme.greenMuted]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.analyzeBtnGrad}
+                >
+                  <MaterialCommunityIcons name="shield-search" size={22} color="#fff" />
+                  <Text style={styles.analyzeBtnText}>Check Image</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={18} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -366,73 +438,73 @@ export default HomeScreen
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  loadingText: {
-    marginTop: 15,
-    fontFamily: FONTFAMILY.VivitaMedium,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  scrollContent: { paddingBottom: 30 },
+  scrollContent: { paddingBottom: 40 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    marginBottom: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+  },
+  logoIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   appTitle: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 24,
+    fontSize: 20,
+    letterSpacing: 0.5,
   },
-  settingsBtn: { padding: 4 },
+  settingsBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   imagePreviewContainer: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 24,
     paddingHorizontal: 20,
   },
   imagePreviewFrame: {
     position: 'relative',
-    borderRadius: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
     elevation: 8,
   },
   imagePreview: {
-    width: 300,
-    height: 300,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#96F6AE',
+    width: width - 80,
+    height: width - 80,
+    borderRadius: 18,
   },
   clearImageBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    top: 18,
+    right: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -440,164 +512,127 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   imagePreviewText: {
     fontFamily: FONTFAMILY.VivitaMedium,
-    fontSize: 14,
+    fontSize: 13,
   },
   illustrationContainer: {
     alignItems: 'center',
-    marginVertical: 20,
+    justifyContent: 'center',
+    marginVertical: 30,
+    position: 'relative',
+  },
+  glowCircle: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
   },
   content: {
-    paddingHorizontal: 30,
+    paddingHorizontal: 32,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 28,
   },
   title: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 28,
+    fontSize: 24,
     textAlign: 'center',
-    marginBottom: 15,
-    lineHeight: 36,
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   description: {
     fontFamily: FONTFAMILY.VivitaLight,
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
-  // ── Action buttons ────────────────────────────────────────────────────
   actionSection: {
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 20,
   },
-  iconBtn: {
-    borderRadius: 18,
+  actionCard: {
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#1B60A0',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  iconBtnGrad: {
+  cardGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     gap: 14,
   },
-  iconBtnOutline: {
+  cardOutline: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     borderWidth: 1.5,
     gap: 14,
   },
-  iconBtnOuterGap: { marginTop: 12 },
-  iconBtnCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
+  cardIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnLabels: { flex: 1 },
-  iconBtnTitle: {
+  cardTextContainer: { flex: 1 },
+  cardTitle: {
     fontFamily: FONTFAMILY.VivitaBold,
     fontSize: 15,
     color: '#fff',
     marginBottom: 2,
   },
-  iconBtnSub: {
+  cardSubtitle: {
     fontFamily: FONTFAMILY.VivitaLight,
     fontSize: 12,
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.8)',
   },
-  // ── Analyze button ────────────────────────────────────────────────────
+  cardTitleOutlined: {
+    fontFamily: FONTFAMILY.VivitaBold,
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  cardSubtitleOutlined: {
+    fontFamily: FONTFAMILY.VivitaLight,
+    fontSize: 12,
+  },
   analyzeSection: {
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   analyzeBtn: {
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#2A7BB6',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
   },
   analyzeBtnGrad: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
-    borderRadius: 18,
     gap: 10,
   },
   analyzeBtnText: {
     fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 17,
+    fontSize: 16,
     color: '#fff',
-    letterSpacing: 0.3,
-  },
-  howItWorksContainer: { paddingHorizontal: 20 },
-  sectionTitle: {
-    fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 22,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  stepCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  stepArrow: { marginBottom: 20 },
-  stepIconBg: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  stepNumBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  stepNumText: {
-    fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 11,
-    color: '#fff',
-  },
-  stepTitle: {
-    fontFamily: FONTFAMILY.VivitaBold,
-    fontSize: 13,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  stepDescription: {
-    fontFamily: FONTFAMILY.VivitaLight,
-    fontSize: 11,
-    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 })

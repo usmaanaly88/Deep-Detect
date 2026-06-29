@@ -1,2 +1,2 @@
-export const BASE_URL = "http://10.133.99.87:8000"
+export const BASE_URL = "https://adeelhassan-deep-detect-api.hf.space"
 export const END_POINT = "/predict"

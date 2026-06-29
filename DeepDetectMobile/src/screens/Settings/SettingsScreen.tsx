@@ -56,7 +56,7 @@ const SettingsScreen = ({ navigation }: SettingsScreenProps) => {
             onPress={() => navigation.navigate('HistoryScreen')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconWrap, { backgroundColor: theme.isDark ? '#0D1B2A' : theme.blueBackground }]}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.isDark ? '#0D1B2A' : theme.blueSoft }]}>
               <MaterialCommunityIcons name="history" size={22} color={theme.blueDark} />
             </View>
             <Text style={[styles.rowLabel, { color: theme.textdark }]}>Analysis History</Text>
@@ -68,7 +68,7 @@ const SettingsScreen = ({ navigation }: SettingsScreenProps) => {
         <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: theme.whiteSoft, borderColor: theme.divider }]}>
           <View style={styles.row}>
-            <View style={[styles.iconWrap, { backgroundColor: isDark ? '#1E2235' : theme.blueBackground }]}>
+            <View style={[styles.iconWrap, { backgroundColor: isDark ? '#1E2235' : theme.blueSoft }]}>
               <MaterialCommunityIcons
                 name={isDark ? 'weather-night' : 'weather-sunny'}
                 size={22}

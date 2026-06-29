@@ -1,50 +1,46 @@
 // ─── Brand / static colours (same in both themes) ─────────────────────────
 const BRAND = {
-  greenPrimary:  '#9FFFAE',
-  greenLight:    '#B2FFBE',
-  greenLighter:  '#C5FFCE',
-  greenMuted:    '#9CEFB9',
-  greenBackground:'#ECFFEF',
-  greenAccent:   '#96F6AE',
+  greenPrimary:  '#00FF87', // Hyper-Mint Acid Green
+  greenLight:    '#39FF14', // Luminous Lime
+  greenLighter:  '#A7F3D0',
+  greenMuted:    '#10B981',
+  greenBackground:'rgba(0, 255, 135, 0.08)',
+  greenAccent:   '#00FF87',
 
-  bluePrimary:   '#0060A9',
-  blueDark:      '#2A7BB6',
-  blueMedium:    '#669FCB',
-  blueLight:     '#9AC0DC',
-  blueSoft:      '#CDDFEE',
-  blueBackground:'#F0F5FA',
-  blueSurface:   '#E9EEF3',
-  bluetext:      '#337FBA',
-  blueMuted:     '#0061A9',
+  bluePrimary:   '#6366F1', // Electric Indigo
+  blueDark:      '#4F46E5', // Deep Synthwave Purple-Blue
+  blueMedium:    '#00F0FF', // Cyber Cyan
+  blueLight:     '#22D3EE',
+  blueSoft:      'rgba(99, 102, 241, 0.15)', // Neon Tinted Indigo Overlay
+  blueSurface:   'rgba(0, 240, 255, 0.08)',  // Cyber Cyan Ambient Surface
+  blueBackground:'#030712',                  // Abyssal Space Black
+  bluetext:      '#00F0FF',
+  blueMuted:     '#6366F1',
 
-  black:         '#000000',
-  gray:          '#D3D3D3',
-  grayLight:     '#D9D9D9',
+  black:         '#030712', // Space Void Black
+  gray:          '#64748B',
+  grayLight:     '#CBD5E1',
 
-  red:           '#DB1C1C',
-  lightred:      '#F72A2A',
+  red:           '#FF0055', // Neon Rose Magenta Warning
+  lightred:      '#FF4F81',
 };
 
 // ─── Light Theme ────────────────────────────────────────────────────────────
 export const LIGHT_THEME = {
   ...BRAND,
-  // surfaces
-  white:         '#FCFCFC',
-  whiteSoft:     '#FDFDFD',
-  whitePure:     '#FEFEFE',
-  whitedark:     '#F9F9F9',
-  grayBackground:'#F9F9F9',
-  graySurface:   '#E3E3E3',
-  // text
-  textPrimary:   '#4F4B4C',
-  textSecondary: '#7B7879',
-  textDisabled:  '#A7A6A6',
-  text:          '#B1B1B1',
-  textdark:      '#323345',
-  // borders
-  border:        '#D3D3D3',
-  divider:       '#E7E7E7',
-  // theme flag
+  white:         '#F8FAFC',
+  whiteSoft:     '#FFFFFF',
+  whitePure:     '#FFFFFF',
+  whitedark:     '#F1F5F9',
+  grayBackground:'#F8FAFC',
+  graySurface:   '#F1F5F9',
+  textPrimary:   '#0F172A',
+  textSecondary: '#475569',
+  textDisabled:  '#94A3B8',
+  text:          '#475569',
+  textdark:      '#0F172A',
+  border:        '#E2E8F0',
+  divider:       '#F1F5F9',
   isDark:        false,
   statusBar:     'dark-content' as const,
 };
@@ -52,33 +48,33 @@ export const LIGHT_THEME = {
 // ─── Dark Theme ─────────────────────────────────────────────────────────────
 export const DARK_THEME = {
   ...BRAND,
-  // surfaces
-  white:         '#1A1D27',
-  whiteSoft:     '#22263A',
-  whitePure:     '#0F1117',
-  whitedark:     '#252A3F',
-  grayBackground:'#1A1D27',
-  graySurface:   '#22263A',
-  // text
-  textPrimary:   '#EDEDED',
-  textSecondary: '#9DA3B5',
-  textDisabled:  '#565C73',
-  text:          '#9DA3B5',
-  textdark:      '#EDEDED',
-  // borders
-  border:        '#2E3348',
-  divider:       '#252A3F',
-  // overrides that look better in dark
-  blueDark:      '#4A9FD6',
-  blueSurface:   '#1E2235',
-  blueBackground:'#141828',
-  blueSoft:      '#1E2840',
-  // theme flag
+  white:         '#030712', // Abyssal Space Black
+  whiteSoft:     '#0B0F19', // Cyber Slate Card Background
+  whitePure:     '#02040A', // Void Core Black
+  whitedark:     '#131B31', // Nebula Deep Blue
+  grayBackground:'#030712',
+  graySurface:   '#0D1326', // Premium card borders & headers
+
+  // High Contrast Text
+  textPrimary:   '#FFFFFF', // Clinical White
+  textSecondary: '#94A3B8', // Muted Slate Silver
+  textDisabled:  '#334155', // Darkened Steel Grey
+  text:          '#94A3B8',
+  textdark:      '#FFFFFF',
+
+  // Tech Glassmorphic Borders
+  border:        'rgba(99, 102, 241, 0.2)', // Semi-transparent Indigo Border
+  divider:       'rgba(0, 240, 255, 0.1)',  // Semi-transparent Cyan Divider
+
+  // Overrides for vibrant dark interface
+  blueDark:      '#6366F1', // Shift toward luminous Electric Indigo
+  blueSurface:   '#0E1428', // Glowing core
+  blueBackground:'#030712',
+  blueSoft:      'rgba(99, 102, 241, 0.25)',
+
   isDark:        true,
   statusBar:     'light-content' as const,
 };
 
 export type AppTheme = typeof LIGHT_THEME;
-
-// ─── Backward-compat alias (always light) ───────────────────────────────────
-export const COLORS = LIGHT_THEME;
+export const COLORS = DARK_THEME; // Default fallbacks use dark theme directly

@@ -1,7 +1,7 @@
 # Deep-Detect 🔍🤖
-### AI vs. Real Image Classifier — End-to-End Mobile System
+### Deep-Fake vs. Real Image Classifier — End-to-End Mobile System
 
-Deep-Detect is a professional-grade, full-stack computer vision application that classifies images as **AI-generated** or **Real** using a custom-trained PyTorch CNN model. It consists of a FastAPI backend, a cross-platform React Native mobile client, and a standalone desktop utility.
+Deep-Detect is a professional-grade, full-stack computer vision application that classifies images as **Deep-Fake** or **Real** using a custom-trained PyTorch CNN model. It consists of a FastAPI backend, a cross-platform React Native mobile client, and a standalone desktop utility.
 
 ---
 
@@ -52,7 +52,7 @@ Deep-Detect/
 
 ## 🌟 Key Features
 
-- **Custom CNN Architecture** — High-accuracy binary classifier trained from scratch on deepfake/AI-generated datasets
+- **Custom CNN Architecture** — High-accuracy binary classifier trained from scratch on deep-fake/deepfake datasets
 - **FastAPI Backend** — Production-ready async Python server using PyTorch + Uvicorn
 - **React Native Mobile App** — Cross-platform (Android/iOS) with Redux, Firebase Firestore history, and fluid UI animations
 - **Firebase Integration** — Anonymous authentication and scan history persisted to Firestore

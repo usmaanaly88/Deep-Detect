@@ -69,8 +69,12 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
   const glow      = useRef(new Animated.Value(0)).current
   const textFade  = useRef(new Animated.Value(1)).current
   const shimmer   = useRef(new Animated.Value(-1)).current
+  const scanLine  = useRef(new Animated.Value(0)).current  // vertical scanning laser
   const particleAnims = useRef(INNER_PARTICLES.map(() => new Animated.Value(0))).current
   const bgDotAnims    = useRef(BG_DOTS.map(() => new Animated.Value(0))).current
+
+  // Neon particle color palette for synthwave bursts
+  const PARTICLE_COLORS = [theme.greenAccent, theme.blueMedium, theme.red, theme.bluePrimary, theme.greenLight, theme.blueLight, theme.lightred, theme.blueMedium]
 
   useEffect(() => {
     // ── Entry ─────────────────────────────────────────────────────────────
@@ -83,15 +87,15 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
       }),
     ]).start()
 
-    // ── Ring rotations ────────────────────────────────────────────────────
+    // ── Ring rotations (sped up for ultra-responsive feel) ─────────────────
     Animated.loop(
-      Animated.timing(rotate1, { toValue: 1, duration: 5500, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(rotate1, { toValue: 1, duration: 4000, easing: Easing.linear, useNativeDriver: true })
     ).start()
     Animated.loop(
-      Animated.timing(rotate2, { toValue: 1, duration: 9000, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(rotate2, { toValue: 1, duration: 7000, easing: Easing.linear, useNativeDriver: true })
     ).start()
     Animated.loop(
-      Animated.timing(rotate3, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(rotate3, { toValue: 1, duration: 12000, easing: Easing.linear, useNativeDriver: true })
     ).start()
 
     // ── Orb pulse ─────────────────────────────────────────────────────────
@@ -115,6 +119,11 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
     // ── Shimmer sweep ─────────────────────────────────────────────────────
     Animated.loop(
       Animated.timing(shimmer, { toValue: 2, duration: 2200, easing: Easing.linear, useNativeDriver: true })
+    ).start()
+
+    // ── Vertical scanning laser line ──────────────────────────────────────
+    Animated.loop(
+      Animated.timing(scanLine, { toValue: 1, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true })
     ).start()
 
     // ── Inner particles ───────────────────────────────────────────────────
@@ -199,11 +208,11 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
   const halo1Op    = glow.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.18] })
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.blueBackground }]}>
-      <StatusBar barStyle={theme.statusBar} backgroundColor={theme.blueBackground} translucent />
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.white }]}>
+      <StatusBar barStyle={theme.statusBar} backgroundColor={theme.white} translucent />
 
       <LinearGradient
-        colors={[theme.blueBackground, theme.whitePure, theme.blueBackground, theme.white]}
+        colors={[theme.white, theme.whitePure, theme.white, theme.whiteSoft]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.bg}
@@ -246,38 +255,38 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
             <Animated.View style={[styles.halo, styles.halo2, { opacity: halo2Op }]} />
             <Animated.View style={[styles.halo, styles.halo1, { opacity: halo1Op }]} />
 
-            {/* Ring 1 – outer dashed, CW fast */}
-            <Animated.View style={[styles.ringAbs, { width: 270, height: 270, transform: [{ rotate: r1 }] }]}>
+            {/* Ring 1 – outer dashed, 3D tilted holographic disk */}
+            <Animated.View style={[styles.ringAbs, { width: 270, height: 270, transform: [{ perspective: 450 }, { rotateX: '60deg' }, { rotateY: '8deg' }, { rotateZ: r1 }] }]}>
               <Svg width={270} height={270} viewBox="0 0 270 270">
                 <Circle
                   cx="135" cy="135" r="131"
-                  fill="none" stroke="#2A7BB6"
-                  strokeWidth="1.5" strokeDasharray="11 7"
-                  strokeLinecap="round" opacity={0.52}
-                />
-              </Svg>
-            </Animated.View>
-
-            {/* Ring 2 – mid dashed, CCW */}
-            <Animated.View style={[styles.ringAbs, { width: 248, height: 248, transform: [{ rotate: r2 }] }]}>
-              <Svg width={248} height={248} viewBox="0 0 248 248">
-                <Circle
-                  cx="124" cy="124" r="119"
-                  fill="none" stroke="#96F6AE"
-                  strokeWidth="1.2" strokeDasharray="5 10"
+                  fill="none" stroke={theme.blueMedium}
+                  strokeWidth="1.8" strokeDasharray="12 8"
                   strokeLinecap="round" opacity={0.65}
                 />
               </Svg>
             </Animated.View>
 
-            {/* Ring 3 – inner dotted, CW slow */}
-            <Animated.View style={[styles.ringAbs, { width: 224, height: 224, transform: [{ rotate: r3 }] }]}>
+            {/* Ring 2 – mid dashed, 3D tilted CCW */}
+            <Animated.View style={[styles.ringAbs, { width: 248, height: 248, transform: [{ perspective: 450 }, { rotateX: '60deg' }, { rotateY: '-8deg' }, { rotateZ: r2 }] }]}>
+              <Svg width={248} height={248} viewBox="0 0 248 248">
+                <Circle
+                  cx="124" cy="124" r="119"
+                  fill="none" stroke={theme.greenPrimary}
+                  strokeWidth="1.5" strokeDasharray="6 12"
+                  strokeLinecap="round" opacity={0.75}
+                />
+              </Svg>
+            </Animated.View>
+
+            {/* Ring 3 – inner dotted, 3D tilted CW slow */}
+            <Animated.View style={[styles.ringAbs, { width: 224, height: 224, transform: [{ perspective: 450 }, { rotateX: '60deg' }, { rotateY: '0deg' }, { rotateZ: r3 }] }]}>
               <Svg width={224} height={224} viewBox="0 0 224 224">
                 <Circle
                   cx="112" cy="112" r="107"
-                  fill="none" stroke="#9AC0DC"
-                  strokeWidth="1" strokeDasharray="3 13"
-                  strokeLinecap="round" opacity={0.45}
+                  fill="none" stroke={theme.blueLight}
+                  strokeWidth="1.2" strokeDasharray="4 14"
+                  strokeLinecap="round" opacity={0.55}
                 />
               </Svg>
             </Animated.View>
@@ -285,7 +294,7 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
             {/* Orb core */}
             <Animated.View style={[styles.orbCore, { transform: [{ scale: pulse }] }]}>
               <LinearGradient
-                colors={['#5BA3DC', '#2A7BB6', '#1B60A0', '#0E4D88']}
+                colors={[theme.blueLight, theme.blueMedium, theme.blueDark, theme.blueSoft]}
                 start={{ x: 0.1, y: 0.05 }}
                 end={{ x: 0.9, y: 0.95 }}
                 style={styles.orbGrad}
@@ -301,17 +310,17 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
                 {/* Glass highlight sheen */}
                 <View style={styles.glassSheen} />
 
-                {/* Floating star particles */}
+                {/* Neon burst particles */}
                 {INNER_PARTICLES.map((p, i) => {
-                  const ty = particleAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, -12] })
-                  const op = particleAnims[i].interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 0.9, 0.2] })
+                  const ty = particleAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, -14] })
+                  const op = particleAnims[i].interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.15, 1, 0.15] })
                   return (
                     <Animated.View
                       key={p.id}
                       style={{
                         position: 'absolute',
-                        width: p.size, height: p.size, borderRadius: p.size / 2,
-                        backgroundColor: '#ffffff',
+                        width: p.size + 1, height: p.size + 1, borderRadius: (p.size + 1) / 2,
+                        backgroundColor: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
                         left: p.x * ORB_SIZE - p.size / 2,
                         top:  p.y * ORB_SIZE - p.size / 2,
                         opacity: op,
@@ -320,6 +329,20 @@ const AnalyzingScreen = ({ route, navigation }: Props) => {
                     />
                   )
                 })}
+
+                {/* Vertical scanning laser line */}
+                <Animated.View
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    backgroundColor: theme.greenAccent,
+                    opacity: 0.7,
+                    top: 0,
+                    transform: [{ translateY: scanLine.interpolate({ inputRange: [0, 1], outputRange: [0, ORB_SIZE] }) }],
+                  }}
+                />
 
                 {/* Centre scan icon */}
                 <View style={styles.centerIcon}>

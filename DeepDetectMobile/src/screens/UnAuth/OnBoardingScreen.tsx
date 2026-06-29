@@ -10,13 +10,13 @@ import {
   StatusBar,
 } from 'react-native'
 import LinearGradient from 'react-native-linear-gradient'
-import { COLORS } from '../../constants/colors'
 import { FONTFAMILY } from '../../constants/fontFamily'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { AppStackParamList } from '../../route/AppNavigator'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import AppButton from '../../components/Custom/AppButton'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useTheme } from '../../hooks/useTheme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -38,7 +38,7 @@ const slides: OnboardingSlide[] = [
   {
     id: '1',
     title: 'Welcome to\nDeepDetect',
-    description: 'Instantly verify if an image is AI-generated or real with advanced detection technology',
+    description: 'Instantly verify if an image is Deep-Fake or real with advanced detection technology',
     iconName: 'shield-check-outline',
     iconSize: 120,
   },
@@ -59,6 +59,7 @@ const slides: OnboardingSlide[] = [
 ]
 
 const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
+  const theme = useTheme()
   const [currentIndex, setCurrentIndex] = useState(0)
   const flatListRef = useRef<FlatList>(null)
 
@@ -94,16 +95,16 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
   const renderSlide = ({ item }: { item: OnboardingSlide }) => (
     <View style={styles.slide}>
       <View style={styles.iconContainer}>
-        <View style={styles.iconCircle}>
+        <View style={[styles.iconCircle, { backgroundColor: theme.blueSurface, borderColor: theme.border }]}>
           <MaterialCommunityIcons 
             name={item.iconName} 
             size={item.iconSize || 100} 
-            color={COLORS.white} 
+            color={theme.blueMedium} 
           />
         </View>
       </View>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+      <Text style={[styles.title, { color: theme.textdark }]}>{item.title}</Text>
+      <Text style={[styles.description, { color: theme.textSecondary }]}>{item.description}</Text>
     </View>
   )
 
@@ -114,7 +115,8 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
           key={index}
           style={[
             styles.dot,
-            index === currentIndex && styles.dotActive,
+            { backgroundColor: theme.blueMedium },
+            index === currentIndex ? [styles.dotActive, { backgroundColor: theme.blueDark }] : null,
           ]}
         />
       ))}
@@ -123,12 +125,12 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
 
   return (
     <LinearGradient
-      colors={[COLORS.blueDark, COLORS.bluePrimary, COLORS.greenAccent]}
+      colors={[theme.white, theme.blueSurface, theme.white]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.blueDark} />
+      <StatusBar barStyle={theme.statusBar} backgroundColor={theme.white} />
       {/* Slides */}
       <FlatList
         ref={flatListRef}
@@ -149,16 +151,19 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
       {/* Bottom Section */}
       <View style={styles.bottomContainer}>
         {currentIndex < slides.length - 1 ? (
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>Skip</Text>
-            <MaterialCommunityIcons name="arrow-right" size={22} color={COLORS.blueDark} />
+          <TouchableOpacity 
+            style={[styles.nextButton, { backgroundColor: theme.blueDark }]} 
+            onPress={handleNext}
+            activeOpacity={0.9}
+          >
+            <Text style={[styles.nextButtonText, { color: '#ffffff' }]}>Next</Text>
+            <MaterialCommunityIcons name="arrow-right" size={20} color="#ffffff" />
           </TouchableOpacity>
         ) : (
-          // Last slide pe Get Started button
           <AppButton
             text="Get Started"
             onPress={handleGetStarted}
-            colors={[COLORS.white, COLORS.white]}
+            colors={[theme.blueDark, theme.bluePrimary]}
             textStyle={styles.buttonText}
           />
         )}
@@ -172,19 +177,6 @@ export default OnboardingScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  skipButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  skipText: {
-    fontFamily: FONTFAMILY.VivitaMedium,
-    fontSize: 16,
-    color: COLORS.white,
   },
   slide: {
     width: SCREEN_WIDTH,
@@ -200,26 +192,26 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1.5,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
   },
   title: {
     fontFamily: FONTFAMILY.VivitaBold,
     fontSize: 32,
-    color: COLORS.white,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 40,
   },
   description: {
     fontFamily: FONTFAMILY.VivitaLight,
-    fontSize: 16,
-    color: COLORS.white,
+    fontSize: 15,
     textAlign: 'center',
-    opacity: 0.9,
     lineHeight: 24,
     paddingHorizontal: 10,
   },
@@ -233,7 +225,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.white,
     opacity: 0.3,
     marginHorizontal: 4,
   },
@@ -249,19 +240,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 28,
     gap: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   nextButtonText: {
     fontFamily: FONTFAMILY.VivitaMedium,
-    fontSize: 18,
-    color: COLORS.blueDark,
+    fontSize: 17,
   },
   buttonText: {
-    color: COLORS.blueDark,
+    color: '#ffffff',
     fontFamily: FONTFAMILY.VivitaBold,
   },
 })

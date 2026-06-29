@@ -29,7 +29,7 @@ const ShareScreen = ({ navigation, route }: ShareScreenProps) => {
   const theme = useTheme();
   const { prediction, confidence, imageUri } = route.params;
 
-  const shareText = `I just checked an image with DeepDetect! 🔍\nResult: ${prediction === 'ai' ? 'AI Generated' : 'Real Image'} (${confidence}% confidence)\nTry it yourself!`;
+  const shareText = `I just checked an image with DeepDetect! 🔍\nResult: ${prediction === 'ai' ? 'Deep-Fake' : 'Real Image'} (${confidence}% confidence)\nTry it yourself!`;
 
   const shareToWhatsApp = async () => {
     try {
@@ -121,7 +121,7 @@ const ShareScreen = ({ navigation, route }: ShareScreenProps) => {
             color={prediction === 'ai' ? theme.red : theme.greenMuted}
           />
           <Text style={[styles.badgeLabel, { color: theme.textdark }]}>
-            {prediction === 'ai' ? 'AI Generated' : 'Real Image'}
+            {prediction === 'ai' ? 'Deep-Fake' : 'Real Image'}
           </Text>
           <Text style={[styles.badgeConfidence, { color: theme.textSecondary }]}>
             {confidence}% confidence

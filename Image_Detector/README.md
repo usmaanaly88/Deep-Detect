@@ -1,3 +1,11 @@
+---
+title: Deep Detect Api
+emoji: 🦀
+colorFrom: red
+colorTo: blue
+sdk: docker
+app_port: 7860
+---
 # Image_Detector — FastAPI Backend 🐍
 
 This directory contains the complete Python backend for Deep-Detect. It exposes a REST API that accepts image uploads and returns an AI vs. Real classification result using a custom-trained PyTorch CNN.
@@ -94,7 +102,7 @@ Expected response:
 
 ### `POST /predict`
 
-Classifies an uploaded image as AI-generated or Real.
+Classifies an uploaded image as Deep-Fake or Real.
 
 ```bash
 curl -X POST http://localhost:8000/predict \

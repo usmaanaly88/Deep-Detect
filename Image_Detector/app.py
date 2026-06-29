@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 
-@app.get("/", tags=["General"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["General"])
 async def root():
     """
     Health check and system information endpoint.
@@ -52,7 +52,7 @@ async def root():
 async def predict_image(file: UploadFile = File(...)):
     """
     Accepts an uploaded image file, preprocesses it, runs it through
-    the custom CNN, and returns whether it is AI-generated ('ai') or 'real'.
+    the custom CNN, and returns whether it is Deep-Fake ('ai') or 'real'.
     """
     logger.info(f"Received prediction request. File: {file.filename}")
 
