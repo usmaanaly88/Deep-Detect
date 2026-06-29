@@ -99,9 +99,3 @@ DeepDetectMobile/.bundle/
 npm-debug.log*
 yarn-error.log*
 Image_Detector/logs/
-
-# -----------------------------------------------
-# 📄 Internal Planning Docs (IDE-generated)
-# -----------------------------------------------
-docs/*.md
-docs/images/
